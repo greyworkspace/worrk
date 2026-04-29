@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>3D Model Viewer</title>
+  <title>Flying Airplane 3D</title>
   <style>
-    body { margin: 0; }
+    body { margin: 0; overflow: hidden; }
     canvas { display: block; }
   </style>
 </head>
@@ -15,35 +15,79 @@
 
 <script>
 const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x87ceeb); // sky blue 🌤️
+
+// camera
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
-const renderer = new THREE.WebGLRenderer();
+camera.position.z = 5;
+
+// renderer
+const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
 // light
-const light = new THREE.AmbientLight(0xffffff, 1);
+const light = new THREE.DirectionalLight(0xffffff, 1);
+light.position.set(5,5,5);
 scene.add(light);
 
-// load material
+const ambient = new THREE.AmbientLight(0xffffff, 0.6);
+scene.add(ambient);
+
+// ground (optional)
+const planeGeo = new THREE.PlaneGeometry(50,50);
+const planeMat = new THREE.MeshBasicMaterial({ color: 0x228B22 });
+const ground = new THREE.Mesh(planeGeo, planeMat);
+ground.rotation.x = -Math.PI/2;
+ground.position.y = -2;
+scene.add(ground);
+
+// airplane
+let airplane;
+
 const mtlLoader = new THREE.MTLLoader();
-mtlLoader.load('model/model.mtl', function(materials) {
+mtlLoader.load('11803_Airplane_v1_l1.mtl', function(materials) {
   materials.preload();
 
   const objLoader = new THREE.OBJLoader();
   objLoader.setMaterials(materials);
 
-  objLoader.load('model/model.obj', function(object) {
-    scene.add(object);
+  objLoader.load('11803_Airplane_v1_l1.obj', function(object) {
+    airplane = object;
+    airplane.scale.set(0.5,0.5,0.5);
+    scene.add(airplane);
   });
 });
 
-camera.position.z = 5;
+// animation variables
+let t = 0;
 
 function animate() {
   requestAnimationFrame(animate);
+
+  if (airplane) {
+    t += 0.02;
+
+    // circular flying motion
+    airplane.position.x = Math.sin(t) * 3;
+    airplane.position.z = Math.cos(t) * 3;
+    airplane.position.y = Math.sin(t * 2) * 1;
+
+    // rotate to face direction
+    airplane.rotation.y = t;
+  }
+
   renderer.render(scene, camera);
 }
+
 animate();
+
+// resize fix
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth/window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
 </script>
 
 </body>
